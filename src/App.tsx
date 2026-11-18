@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navbar } from './components/Navbar';
 import { ResourcifyProvider, useResourcify } from './context/ResourcifyContext';
+import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { BookPickupPage } from './pages/BookPickupPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
@@ -19,6 +20,12 @@ function ResourcifyShell() {
       return <LoginPage />;
     }
 
+    if (currentUser.role === 'admin') {
+      if (currentPage === 'index') return <LoginPage />;
+      if (currentPage === 'auth') return <SignUpPage />;
+      return <AdminDashboardPage />;
+    }
+
     switch (currentPage) {
       case 'index':
         return <LoginPage />;
@@ -32,6 +39,7 @@ function ResourcifyShell() {
         );
       case 'rewards':
         return <RewardsShopPage />;
+      case 'admin':
       case 'dashboard':
       default:
         return (

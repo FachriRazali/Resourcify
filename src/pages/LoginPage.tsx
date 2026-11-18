@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { useResourcify } from '../context/ResourcifyContext';
+import { ADMIN_CREDENTIALS, RESIDENT_DEMO_CREDENTIALS } from '../data/seedData';
 
 export function LoginPage() {
   const { login, navigate } = useResourcify();
-  const [email, setEmail] = useState('clara.vance@resourcify.co');
-  const [password, setPassword] = useState('resourcify2026');
+  const [email, setEmail] = useState(RESIDENT_DEMO_CREDENTIALS.email);
+  const [password, setPassword] = useState(RESIDENT_DEMO_CREDENTIALS.password);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -17,19 +18,56 @@ export function LoginPage() {
     }
   };
 
+  const fillDemoAccount = (type: 'resident' | 'admin') => {
+    setError(null);
+    if (type === 'admin') {
+      setEmail(ADMIN_CREDENTIALS.email);
+      setPassword(ADMIN_CREDENTIALS.password);
+    } else {
+      setEmail(RESIDENT_DEMO_CREDENTIALS.email);
+      setPassword(RESIDENT_DEMO_CREDENTIALS.password);
+    }
+  };
+
   return (
     <main className="min-h-[calc(100vh-64px)] bg-[#F8F9FA] flex items-center justify-center px-4 py-12 sm:py-16">
       <div className="w-full max-w-[460px] bg-[#FFFFFF] border border-[#E5E7EB] rounded-[16px] p-8 sm:p-10">
-        <div className="mb-8">
+        <div className="mb-7">
           <p className="text-[13px] font-medium text-[#2E7D32] mb-2">
-            Resident Portal
+            Resourcify Account Access
           </p>
           <h1 className="font-editorial text-[30px] leading-[1.2] font-semibold text-[#212121] tracking-tight">
-            Sign in to your household account
+            Sign in to your account
           </h1>
           <p className="text-[15px] text-[#616161] mt-2 leading-relaxed">
-            Schedule sorted waste pickups, verify recycling weights, and spend EcoCoins at neighborhood grocers.
+            Access your resident EcoCoin wallet or sign in as an operations admin to verify waste pickups.
           </p>
+        </div>
+
+        {/* Role Quick-Fill Switcher */}
+        <div className="mb-6 grid grid-cols-2 gap-2 p-1 bg-[#F8F9FA] border border-[#E5E7EB] rounded-lg">
+          <button
+            type="button"
+            onClick={() => fillDemoAccount('resident')}
+            className={`py-2 px-3 text-[13px] font-medium rounded-md transition-colors cursor-pointer whitespace-nowrap ${
+              email.trim().toLowerCase() !== ADMIN_CREDENTIALS.email
+                ? 'bg-[#FFFFFF] text-[#212121] border border-[#E5E7EB]'
+                : 'text-[#616161] hover:text-[#212121]'
+            }`}
+          >
+            Resident account
+          </button>
+          <button
+            type="button"
+            onClick={() => fillDemoAccount('admin')}
+            className={`py-2 px-3 text-[13px] font-medium rounded-md transition-colors cursor-pointer whitespace-nowrap ${
+              email.trim().toLowerCase() === ADMIN_CREDENTIALS.email
+                ? 'bg-[#FFFFFF] text-[#2E7D32] font-semibold border border-[#E5E7EB]'
+                : 'text-[#616161] hover:text-[#212121]'
+            }`}
+          >
+            Admin account
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5" noValidate>
@@ -87,9 +125,9 @@ export function LoginPage() {
           </button>
         </form>
 
-        <div className="mt-8 pt-6 border-t border-[#E5E7EB] flex items-center justify-between gap-4">
+        <div className="mt-7 pt-6 border-t border-[#E5E7EB] flex items-center justify-between gap-4">
           <span className="text-[14px] text-[#616161]">
-            New to Resourcify?
+            New resident?
           </span>
           <button
             type="button"

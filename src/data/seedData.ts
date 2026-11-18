@@ -1,5 +1,27 @@
 import { PickupRecord, RedemptionRecord, ResidentUser, RewardProduct } from '../types/resourcify';
 
+export const ADMIN_CREDENTIALS = {
+  email: 'admin@resourcify.co',
+  password: 'admin1234',
+};
+
+export const RESIDENT_DEMO_CREDENTIALS = {
+  email: 'clara.vance@resourcify.co',
+  password: 'resourcify2026',
+};
+
+export const ADMIN_USER: ResidentUser = {
+  id: 'adm_marcus_01',
+  role: 'admin',
+  email: 'admin@resourcify.co',
+  full_name: 'Marcus Chen',
+  phone: '+1 (415) 890-0100',
+  address: 'Resourcify Central Sorting Hub\n240 Folsom St, San Francisco, CA 94105',
+  ecocoin_balance: 0,
+  total_waste_kg: 0,
+  ecocoins_earned_all_time: 0,
+};
+
 export const SAMPLE_WASTE_PHOTOS = [
   {
     label: 'Sorted glass, cardboard & aluminum',
@@ -17,6 +39,7 @@ export const SAMPLE_WASTE_PHOTOS = [
 
 export const INITIAL_RESIDENT: ResidentUser = {
   id: 'res_clara_01',
+  role: 'resident',
   email: 'clara.vance@resourcify.co',
   full_name: 'Clara Vance',
   phone: '+1 (415) 890-4312',
@@ -24,6 +47,18 @@ export const INITIAL_RESIDENT: ResidentUser = {
   ecocoin_balance: 210,
   total_waste_kg: 51,
   ecocoins_earned_all_time: 510,
+};
+
+export const SECOND_RESIDENT: ResidentUser = {
+  id: 'res_daniel_02',
+  role: 'resident',
+  email: 'daniel.okafor@resourcify.co',
+  full_name: 'Daniel Okafor',
+  phone: '+1 (415) 722-9104',
+  address: '118 Valencia St, Unit 4A\nSan Francisco, CA 94103',
+  ecocoin_balance: 240,
+  total_waste_kg: 24,
+  ecocoins_earned_all_time: 240,
 };
 
 export const INITIAL_PICKUPS: PickupRecord[] = [
@@ -35,6 +70,17 @@ export const INITIAL_PICKUPS: PickupRecord[] = [
     weight_kg: 14.0,
     photo_url: '/src/assets/images/waste_pet_paper_1794849178495.jpg',
     waste_summary: 'Bundled kraft paper & rinsed clear PET bottles',
+    status: 'Pending',
+    ecocoins_awarded: 0,
+  },
+  {
+    id: 'pk_106',
+    resident_id: 'res_daniel_02',
+    pickup_date: '2026-11-16T10:15:00',
+    address: '118 Valencia St, Unit 4A\nSan Francisco, CA 94103',
+    weight_kg: 11.5,
+    photo_url: '/src/assets/images/waste_sorted_crates_1794849178004.jpg',
+    waste_summary: 'Clear glass bottles, crushed cans & flattened cardboard',
     status: 'Pending',
     ecocoins_awarded: 0,
   },
@@ -70,6 +116,17 @@ export const INITIAL_PICKUPS: PickupRecord[] = [
     waste_summary: 'Sorted household paperboard & clear beverage bottles',
     status: 'Approved',
     ecocoins_awarded: 135,
+  },
+  {
+    id: 'pk_100',
+    resident_id: 'res_daniel_02',
+    pickup_date: '2026-11-03T09:00:00',
+    address: '118 Valencia St, Unit 4A\nSan Francisco, CA 94103',
+    weight_kg: 24.0,
+    photo_url: '/src/assets/images/waste_mixed_glass_1794849178169.jpg',
+    waste_summary: 'Pantry glass jars & sorted corrugated cardboard',
+    status: 'Approved',
+    ecocoins_awarded: 240,
   },
   {
     id: 'pk_101',

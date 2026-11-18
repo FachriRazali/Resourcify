@@ -1,11 +1,15 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import {
+  ADMIN_CREDENTIALS,
+  ADMIN_USER,
   INITIAL_PICKUPS,
   INITIAL_REDEMPTIONS,
   INITIAL_RESIDENT,
   REWARD_PRODUCTS,
+  SECOND_RESIDENT,
 } from '../data/seedData';
 import {
+  AdminSection,
   PageRoute,
   PickupRecord,
   RedemptionRecord,
@@ -31,21 +35,29 @@ interface BookPickupPayload {
 
 interface ResourcifyContextValue {
   currentPage: PageRoute;
+  adminSection: AdminSection;
+  setAdminSection: (section: AdminSection) => void;
   navigate: (page: PageRoute) => void;
   currentUser: ResidentUser | null;
   pickups: PickupRecord[];
   redemptions: RedemptionRecord[];
+  allPickups: PickupRecord[];
+  allRedemptions: RedemptionRecord[];
+  allResidents: ResidentUser[];
   rewards: RewardProduct[];
   login: (email: string, password: string) => { ok: boolean; error?: string };
   signup: (payload: SignupPayload) => { ok: boolean; error?: string };
   logout: () => void;
   bookPickup: (payload: BookPickupPayload) => PickupRecord;
   redeemReward: (product: RewardProduct) => { ok: boolean; error?: string; redemption?: RedemptionRecord };
+  approvePickup: (pickupId: string, verifiedWeightKg: number, note?: string) => void;
+  rejectPickup: (pickupId: string, reason: string) => void;
+  markRedemptionFulfilled: (redemptionId: string) => void;
 }
 
 const ResourcifyContext = createContext<ResourcifyContextValue | undefined>(undefined);
 
-const VALID_PAGES: PageRoute[] = ['index', 'auth', 'dashboard', 'book_pickup', 'rewards'];
+const VALID_PAGES: PageRoute[] = ['index', 'auth', 'dashboard', 'book_pickup', 'rewards', 'admin'];
 
 function getInitialRoute(): PageRoute {
   const hash = window.location.hash.replace('#', '') as PageRoute;
@@ -56,13 +68,20 @@ function getInitialRoute(): PageRoute {
 }
 
 export function ResourcifyProvider({ children }: { children: React.ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<ResidentUser | null>(INITIAL_RESIDENT);
   const [registeredUsers, setRegisteredUsers] = useState<Record<string, ResidentUser>>({
     [INITIAL_RESIDENT.email.toLowerCase()]: INITIAL_RESIDENT,
+    [SECOND_RESIDENT.email.toLowerCase()]: SECOND_RESIDENT,
+    [ADMIN_USER.email.toLowerCase()]: ADMIN_USER,
   });
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(
+    INITIAL_RESIDENT.email.toLowerCase()
+  );
   const [currentPage, setCurrentPage] = useState<PageRoute>(getInitialRoute);
+  const [adminSection, setAdminSection] = useState<AdminSection>('queue');
   const [pickups, setPickups] = useState<PickupRecord[]>(INITIAL_PICKUPS);
   const [redemptions, setRedemptions] = useState<RedemptionRecord[]>(INITIAL_REDEMPTIONS);
+
+  const currentUser = currentUserEmail ? registeredUsers[currentUserEmail] ?? null : null;
 
   const navigate = useCallback((page: PageRoute) => {
     setCurrentPage(page);
@@ -89,24 +108,39 @@ export function ResourcifyProvider({ children }: { children: React.ReactNode }) 
       if (!trimmedEmail || !password.trim()) {
         return { ok: false, error: 'Please enter both your email and password.' };
       }
+
+      if (trimmedEmail === ADMIN_CREDENTIALS.email.toLowerCase()) {
+        if (password.trim() !== ADMIN_CREDENTIALS.password) {
+          return { ok: false, error: 'Invalid admin password. Please try again.' };
+        }
+        setCurrentUserEmail(trimmedEmail);
+        setAdminSection('queue');
+        navigate('admin');
+        return { ok: true };
+      }
+
       const existing = registeredUsers[trimmedEmail];
       if (existing) {
-        setCurrentUser(existing);
-      } else {
-        const displayName = trimmedEmail
-          .split('@')[0]
-          .split(/[._-]/)
-          .filter(Boolean)
-          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-          .join(' ');
-        const guestResident: ResidentUser = {
-          ...INITIAL_RESIDENT,
-          email: email.trim(),
-          full_name: displayName || 'Resident Member',
-        };
-        setRegisteredUsers((prev) => ({ ...prev, [trimmedEmail]: guestResident }));
-        setCurrentUser(guestResident);
+        setCurrentUserEmail(trimmedEmail);
+        navigate(existing.role === 'admin' ? 'admin' : 'dashboard');
+        return { ok: true };
       }
+
+      const displayName = trimmedEmail
+        .split('@')[0]
+        .split(/[._-]/)
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+      const guestResident: ResidentUser = {
+        ...INITIAL_RESIDENT,
+        id: `res_${Date.now()}`,
+        role: 'resident',
+        email: email.trim(),
+        full_name: displayName || 'Resident Member',
+      };
+      setRegisteredUsers((prev) => ({ ...prev, [trimmedEmail]: guestResident }));
+      setCurrentUserEmail(trimmedEmail);
       navigate('dashboard');
       return { ok: true };
     },
@@ -119,18 +153,22 @@ export function ResourcifyProvider({ children }: { children: React.ReactNode }) 
       if (!trimmedEmail || !payload.password.trim() || !payload.full_name.trim() || !payload.address.trim()) {
         return { ok: false, error: 'Please complete all required resident details.' };
       }
+      if (trimmedEmail === ADMIN_CREDENTIALS.email.toLowerCase()) {
+        return { ok: false, error: 'This email is reserved for operations administration.' };
+      }
       const newResident: ResidentUser = {
         id: `res_${Date.now()}`,
+        role: 'resident',
         email: payload.email.trim(),
         full_name: payload.full_name.trim(),
         phone: payload.phone.trim() || '+1 (415) 555-0148',
         address: payload.address.trim(),
-        ecocoin_balance: 50, // Welcome bonus for joining
+        ecocoin_balance: 50,
         total_waste_kg: 0,
         ecocoins_earned_all_time: 50,
       };
       setRegisteredUsers((prev) => ({ ...prev, [trimmedEmail]: newResident }));
-      setCurrentUser(newResident);
+      setCurrentUserEmail(trimmedEmail);
       navigate('dashboard');
       return { ok: true };
     },
@@ -138,7 +176,7 @@ export function ResourcifyProvider({ children }: { children: React.ReactNode }) 
   );
 
   const logout = useCallback(() => {
-    setCurrentUser(null);
+    setCurrentUserEmail(null);
     navigate('index');
   }, [navigate]);
 
@@ -173,19 +211,22 @@ export function ResourcifyProvider({ children }: { children: React.ReactNode }) 
           error: `You need ${product.ecocoin_cost - currentUser.ecocoin_balance} more EcoCoins for this reward.`,
         };
       }
-      const updatedUser: ResidentUser = {
-        ...currentUser,
-        ecocoin_balance: currentUser.ecocoin_balance - product.ecocoin_cost,
-      };
-      setCurrentUser(updatedUser);
-      setRegisteredUsers((prev) => ({
-        ...prev,
-        [updatedUser.email.toLowerCase()]: updatedUser,
-      }));
+      const key = currentUser.email.toLowerCase();
+      setRegisteredUsers((prev) => {
+        const user = prev[key];
+        if (!user) return prev;
+        return {
+          ...prev,
+          [key]: {
+            ...user,
+            ecocoin_balance: user.ecocoin_balance - product.ecocoin_cost,
+          },
+        };
+      });
       const codeNum = Math.floor(1000 + Math.random() * 9000);
       const newRedemption: RedemptionRecord = {
         id: `red_${Date.now()}`,
-        resident_id: updatedUser.id,
+        resident_id: currentUser.id,
         reward_name: product.name,
         partner_name: product.partner,
         ecocoins_spent: product.ecocoin_cost,
@@ -199,6 +240,71 @@ export function ResourcifyProvider({ children }: { children: React.ReactNode }) 
     [currentUser]
   );
 
+  const approvePickup = useCallback(
+    (pickupId: string, verifiedWeightKg: number, note?: string) => {
+      const target = pickups.find((p) => p.id === pickupId);
+      if (!target || target.status !== 'Pending') return;
+
+      const cleanWeight = Math.max(0.5, Number(verifiedWeightKg.toFixed(1)));
+      const awardedCoins = Math.round(cleanWeight * 10);
+
+      setPickups((prev) =>
+        prev.map((item) =>
+          item.id === pickupId
+            ? {
+                ...item,
+                weight_kg: cleanWeight,
+                status: 'Approved',
+                ecocoins_awarded: awardedCoins,
+                reviewer_note: note?.trim() || undefined,
+              }
+            : item
+        )
+      );
+
+      setRegisteredUsers((prev) => {
+        const next = { ...prev };
+        for (const [emailKey, user] of Object.entries(next)) {
+          if (user.id === target.resident_id) {
+            next[emailKey] = {
+              ...user,
+              ecocoin_balance: user.ecocoin_balance + awardedCoins,
+              total_waste_kg: Number((user.total_waste_kg + cleanWeight).toFixed(1)),
+              ecocoins_earned_all_time: user.ecocoins_earned_all_time + awardedCoins,
+            };
+          }
+        }
+        return next;
+      });
+    },
+    [pickups]
+  );
+
+  const rejectPickup = useCallback((pickupId: string, reason: string) => {
+    setPickups((prev) =>
+      prev.map((item) =>
+        item.id === pickupId && item.status === 'Pending'
+          ? {
+              ...item,
+              status: 'Rejected',
+              ecocoins_awarded: 0,
+              reviewer_note:
+                reason.trim() ||
+                'Sorted items did not meet cleanliness or separation standards.',
+            }
+          : item
+      )
+    );
+  }, []);
+
+  const markRedemptionFulfilled = useCallback((redemptionId: string) => {
+    setRedemptions((prev) =>
+      prev.map((item) =>
+        item.id === redemptionId ? { ...item, status: 'Redeemed' } : item
+      )
+    );
+  }, []);
+
   const userPickups = currentUser
     ? pickups.filter((p) => p.resident_id === currentUser.id)
     : [];
@@ -207,20 +313,32 @@ export function ResourcifyProvider({ children }: { children: React.ReactNode }) 
     ? redemptions.filter((r) => r.resident_id === currentUser.id)
     : [];
 
+  const allResidents = Object.values(registeredUsers).filter(
+    (u) => u.role === 'resident'
+  );
+
   return (
     <ResourcifyContext.Provider
       value={{
         currentPage,
+        adminSection,
+        setAdminSection,
         navigate,
         currentUser,
         pickups: userPickups,
         redemptions: userRedemptions,
+        allPickups: pickups,
+        allRedemptions: redemptions,
+        allResidents,
         rewards: REWARD_PRODUCTS,
         login,
         signup,
         logout,
         bookPickup,
         redeemReward,
+        approvePickup,
+        rejectPickup,
+        markRedemptionFulfilled,
       }}
     >
       {children}

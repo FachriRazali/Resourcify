@@ -1,4 +1,14 @@
-export type PageRoute = 'index' | 'auth' | 'dashboard' | 'book_pickup' | 'rewards';
+export type PageRoute =
+  | 'index'
+  | 'auth'
+  | 'dashboard'
+  | 'book_pickup'
+  | 'rewards'
+  | 'admin';
+
+export type AdminSection = 'queue' | 'residents' | 'redemptions';
+
+export type UserRole = 'resident' | 'admin';
 
 export type PickupStatus = 'Approved' | 'Pending' | 'Rejected';
 
@@ -6,6 +16,7 @@ export type RedemptionStatus = 'Ready for pickup' | 'Redeemed';
 
 export interface ResidentUser {
   id: string;
+  role: UserRole;
   email: string;
   full_name: string;
   phone: string;
