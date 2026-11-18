@@ -1,0 +1,6 @@
+{
+  "name": "Resourcify",
+  "description": "Household waste collection and local grocery rewards portal for residents.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
