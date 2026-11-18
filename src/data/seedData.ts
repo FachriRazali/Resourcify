@@ -22,6 +22,18 @@ export const ADMIN_USER: ResidentUser = {
   ecocoins_earned_all_time: 0,
 };
 
+export const COLLECTOR_USER: ResidentUser = {
+  id: 'col_elena_01',
+  role: 'collector',
+  email: 'elena.rodriguez@resourcify.co',
+  full_name: 'Elena Rodriguez',
+  phone: '+1 (415) 614-2280',
+  address: 'Mission District Route 4\nSan Francisco, CA 94110',
+  ecocoin_balance: 0,
+  total_waste_kg: 0,
+  ecocoins_earned_all_time: 0,
+};
+
 export const SAMPLE_WASTE_PHOTOS = [
   {
     label: 'Sorted glass, cardboard & aluminum',
@@ -34,6 +46,21 @@ export const SAMPLE_WASTE_PHOTOS = [
   {
     label: 'Rinsed pantry glass & corrugated boxes',
     url: '/src/assets/images/waste_mixed_glass_1794849178169.jpg',
+  },
+];
+
+export const REWARD_IMAGE_PRESETS = [
+  {
+    label: 'Organic Produce Crate',
+    url: '/src/assets/images/reward_organic_produce_1794849179209.jpg',
+  },
+  {
+    label: 'Zero-Waste Pantry Staples',
+    url: '/src/assets/images/reward_pantry_staples_1794849179106.jpg',
+  },
+  {
+    label: 'Botanical Glass Home Refills',
+    url: '/src/assets/images/reward_home_refills_1794849179739.jpg',
   },
 ];
 
@@ -173,6 +200,7 @@ export const REWARD_PRODUCTS: RewardProduct[] = [
     category: 'Produce',
     ecocoin_cost: 160,
     unit_label: '4.5 kg harvest box',
+    stock: 24,
     image_url: '/src/assets/images/reward_organic_produce_1794849179209.jpg',
     description: 'Heirloom tomatoes, Tuscan kale, Hass avocados, and Meyer lemons sourced from regional organic farms.',
     in_stock: true,
@@ -184,6 +212,7 @@ export const REWARD_PRODUCTS: RewardProduct[] = [
     category: 'Pantry',
     ecocoin_cost: 220,
     unit_label: '4-piece refill set',
+    stock: 15,
     image_url: '/src/assets/images/reward_pantry_staples_1794849179106.jpg',
     description: 'Organic rolled oats in cork-sealed glass, cold-pressed extra virgin olive oil, raw wildflower honey, and country sourdough.',
     in_stock: true,
@@ -195,6 +224,7 @@ export const REWARD_PRODUCTS: RewardProduct[] = [
     category: 'Home Refills',
     ecocoin_cost: 140,
     unit_label: '2 glass bottles + 3 cloths',
+    stock: 32,
     image_url: '/src/assets/images/reward_home_refills_1794849179739.jpg',
     description: 'Refillable amber glass geranium dish soap, frosted lavender hand wash, and three unbleached organic waffle cloths.',
     in_stock: true,

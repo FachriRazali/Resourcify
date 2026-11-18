@@ -10,10 +10,12 @@ const RESIDENT_NAV_ITEMS: { label: string; route: PageRoute }[] = [
 ];
 
 const ADMIN_NAV_ITEMS: { label: string; section: AdminSection }[] = [
-  { label: 'Verification queue', section: 'queue' },
-  { label: 'Residents', section: 'residents' },
-  { label: 'Redemptions', section: 'redemptions' },
+  { label: 'Overview', section: 'overview' },
+  { label: 'Reward Catalog', section: 'catalog' },
+  { label: 'Users & Pickups', section: 'operations' },
 ];
+
+const LOGO_URL = '/assets/aistudio/ResourcifyLogo_1dd5d442.png';
 
 export function Navbar() {
   const {
@@ -26,7 +28,7 @@ export function Navbar() {
   } = useResourcify();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const isAdmin = currentUser?.role === 'admin';
+  const isAdmin = currentUser?.role === 'admin' && currentPage === 'admin';
 
   const handleResidentNav = (route: PageRoute) => {
     navigate(route);
@@ -42,22 +44,35 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-30 w-full bg-[#FFFFFF] border-b border-[#E5E7EB]">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-8 h-16 flex items-center justify-between gap-8">
-        {/* Zone 1: Minimalist wordmark */}
-        <button
-          type="button"
-          onClick={() => {
-            if (!currentUser) {
-              handleResidentNav('index');
-            } else if (isAdmin) {
-              handleAdminNav('queue');
-            } else {
-              handleResidentNav('dashboard');
-            }
-          }}
-          className="font-editorial text-[22px] font-semibold tracking-tight text-[#212121] whitespace-nowrap shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2E7D32] rounded-md px-1 -ml-1 cursor-pointer"
-        >
-          Resourcify
-        </button>
+        {/* Zone 1: Resourcify Logo (+ subtle Admin Portal pill badge on Admin) */}
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              if (!currentUser) {
+                handleResidentNav('index');
+              } else if (currentUser.role === 'admin') {
+                handleAdminNav('overview');
+              } else {
+                handleResidentNav('dashboard');
+              }
+            }}
+            aria-label="Resourcify Home"
+            className="inline-flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2E7D32] rounded-[8px] cursor-pointer"
+          >
+            <img
+              src={LOGO_URL}
+              alt="Resourcify"
+              className="h-9 w-9 rounded-[8px] object-contain"
+            />
+          </button>
+
+          {isAdmin && (
+            <span className="px-2.5 py-0.5 text-[12px] font-medium rounded-full bg-[#F1F3F5] text-[#212121] border border-[#E5E7EB] whitespace-nowrap shrink-0">
+              Admin Portal
+            </span>
+          )}
+        </div>
 
         {currentUser ? (
           <>
@@ -66,7 +81,7 @@ export function Navbar() {
               aria-label="Primary"
               className="hidden md:flex items-center gap-8 h-full"
             >
-              {isAdmin
+              {currentUser.role === 'admin'
                 ? ADMIN_NAV_ITEMS.map((item) => {
                     const isActive =
                       currentPage === 'admin' && adminSection === item.section;
@@ -154,7 +169,7 @@ export function Navbar() {
       {/* Mobile Navigation Drawer */}
       {currentUser && mobileMenuOpen && (
         <div className="md:hidden bg-[#FFFFFF] border-t border-[#E5E7EB] px-4 py-3 space-y-1">
-          {isAdmin
+          {currentUser.role === 'admin'
             ? ADMIN_NAV_ITEMS.map((item) => {
                 const isActive =
                   currentPage === 'admin' && adminSection === item.section;

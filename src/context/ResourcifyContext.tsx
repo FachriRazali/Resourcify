@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 import {
   ADMIN_CREDENTIALS,
   ADMIN_USER,
+  COLLECTOR_USER,
   INITIAL_PICKUPS,
   INITIAL_REDEMPTIONS,
   INITIAL_RESIDENT,
@@ -15,6 +16,7 @@ import {
   RedemptionRecord,
   ResidentUser,
   RewardProduct,
+  UserRole,
 } from '../types/resourcify';
 
 interface SignupPayload {
@@ -33,6 +35,8 @@ interface BookPickupPayload {
   waste_summary: string;
 }
 
+type RewardFormPayload = Omit<RewardProduct, 'id' | 'in_stock'>;
+
 interface ResourcifyContextValue {
   currentPage: PageRoute;
   adminSection: AdminSection;
@@ -43,6 +47,7 @@ interface ResourcifyContextValue {
   redemptions: RedemptionRecord[];
   allPickups: PickupRecord[];
   allRedemptions: RedemptionRecord[];
+  allUsers: ResidentUser[];
   allResidents: ResidentUser[];
   rewards: RewardProduct[];
   login: (email: string, password: string) => { ok: boolean; error?: string };
@@ -53,6 +58,10 @@ interface ResourcifyContextValue {
   approvePickup: (pickupId: string, verifiedWeightKg: number, note?: string) => void;
   rejectPickup: (pickupId: string, reason: string) => void;
   markRedemptionFulfilled: (redemptionId: string) => void;
+  addRewardItem: (payload: RewardFormPayload) => RewardProduct;
+  updateRewardItem: (id: string, payload: RewardFormPayload) => void;
+  deleteRewardItem: (id: string) => void;
+  updateUserRole: (userId: string, role: UserRole) => void;
 }
 
 const ResourcifyContext = createContext<ResourcifyContextValue | undefined>(undefined);
@@ -71,15 +80,17 @@ export function ResourcifyProvider({ children }: { children: React.ReactNode }) 
   const [registeredUsers, setRegisteredUsers] = useState<Record<string, ResidentUser>>({
     [INITIAL_RESIDENT.email.toLowerCase()]: INITIAL_RESIDENT,
     [SECOND_RESIDENT.email.toLowerCase()]: SECOND_RESIDENT,
+    [COLLECTOR_USER.email.toLowerCase()]: COLLECTOR_USER,
     [ADMIN_USER.email.toLowerCase()]: ADMIN_USER,
   });
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(
     INITIAL_RESIDENT.email.toLowerCase()
   );
   const [currentPage, setCurrentPage] = useState<PageRoute>(getInitialRoute);
-  const [adminSection, setAdminSection] = useState<AdminSection>('queue');
+  const [adminSection, setAdminSection] = useState<AdminSection>('overview');
   const [pickups, setPickups] = useState<PickupRecord[]>(INITIAL_PICKUPS);
   const [redemptions, setRedemptions] = useState<RedemptionRecord[]>(INITIAL_REDEMPTIONS);
+  const [rewards, setRewards] = useState<RewardProduct[]>(REWARD_PRODUCTS);
 
   const currentUser = currentUserEmail ? registeredUsers[currentUserEmail] ?? null : null;
 
@@ -114,7 +125,7 @@ export function ResourcifyProvider({ children }: { children: React.ReactNode }) 
           return { ok: false, error: 'Invalid admin password. Please try again.' };
         }
         setCurrentUserEmail(trimmedEmail);
-        setAdminSection('queue');
+        setAdminSection('overview');
         navigate('admin');
         return { ok: true };
       }
@@ -122,7 +133,12 @@ export function ResourcifyProvider({ children }: { children: React.ReactNode }) 
       const existing = registeredUsers[trimmedEmail];
       if (existing) {
         setCurrentUserEmail(trimmedEmail);
-        navigate(existing.role === 'admin' ? 'admin' : 'dashboard');
+        if (existing.role === 'admin') {
+          setAdminSection('overview');
+          navigate('admin');
+        } else {
+          navigate('dashboard');
+        }
         return { ok: true };
       }
 
@@ -223,6 +239,17 @@ export function ResourcifyProvider({ children }: { children: React.ReactNode }) 
           },
         };
       });
+      setRewards((prev) =>
+        prev.map((item) =>
+          item.id === product.id && item.stock > 0
+            ? {
+                ...item,
+                stock: item.stock - 1,
+                in_stock: item.stock - 1 > 0,
+              }
+            : item
+        )
+      );
       const codeNum = Math.floor(1000 + Math.random() * 9000);
       const newRedemption: RedemptionRecord = {
         id: `red_${Date.now()}`,
@@ -305,6 +332,46 @@ export function ResourcifyProvider({ children }: { children: React.ReactNode }) 
     );
   }, []);
 
+  const addRewardItem = useCallback((payload: RewardFormPayload) => {
+    const created: RewardProduct = {
+      ...payload,
+      id: `rew_${Date.now()}`,
+      in_stock: payload.stock > 0,
+    };
+    setRewards((prev) => [created, ...prev]);
+    return created;
+  }, []);
+
+  const updateRewardItem = useCallback((id: string, payload: RewardFormPayload) => {
+    setRewards((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              ...payload,
+              in_stock: payload.stock > 0,
+            }
+          : item
+      )
+    );
+  }, []);
+
+  const deleteRewardItem = useCallback((id: string) => {
+    setRewards((prev) => prev.filter((item) => item.id !== id));
+  }, []);
+
+  const updateUserRole = useCallback((userId: string, role: UserRole) => {
+    setRegisteredUsers((prev) => {
+      const next = { ...prev };
+      for (const [emailKey, user] of Object.entries(next)) {
+        if (user.id === userId) {
+          next[emailKey] = { ...user, role };
+        }
+      }
+      return next;
+    });
+  }, []);
+
   const userPickups = currentUser
     ? pickups.filter((p) => p.resident_id === currentUser.id)
     : [];
@@ -313,9 +380,8 @@ export function ResourcifyProvider({ children }: { children: React.ReactNode }) 
     ? redemptions.filter((r) => r.resident_id === currentUser.id)
     : [];
 
-  const allResidents = Object.values(registeredUsers).filter(
-    (u) => u.role === 'resident'
-  );
+  const allUsers = Object.values(registeredUsers);
+  const allResidents = allUsers.filter((u) => u.role === 'resident');
 
   return (
     <ResourcifyContext.Provider
@@ -329,8 +395,9 @@ export function ResourcifyProvider({ children }: { children: React.ReactNode }) 
         redemptions: userRedemptions,
         allPickups: pickups,
         allRedemptions: redemptions,
+        allUsers,
         allResidents,
-        rewards: REWARD_PRODUCTS,
+        rewards,
         login,
         signup,
         logout,
@@ -339,6 +406,10 @@ export function ResourcifyProvider({ children }: { children: React.ReactNode }) 
         approvePickup,
         rejectPickup,
         markRedemptionFulfilled,
+        addRewardItem,
+        updateRewardItem,
+        deleteRewardItem,
+        updateUserRole,
       }}
     >
       {children}

@@ -6,9 +6,9 @@ export type PageRoute =
   | 'rewards'
   | 'admin';
 
-export type AdminSection = 'queue' | 'residents' | 'redemptions';
+export type AdminSection = 'overview' | 'catalog' | 'operations';
 
-export type UserRole = 'resident' | 'admin';
+export type UserRole = 'resident' | 'collector' | 'admin';
 
 export type PickupStatus = 'Approved' | 'Pending' | 'Rejected';
 
@@ -46,6 +46,7 @@ export interface RewardProduct {
   category: 'Produce' | 'Pantry' | 'Home Refills';
   ecocoin_cost: number;
   unit_label: string;
+  stock: number;
   image_url: string;
   description: string;
   in_stock: boolean;
